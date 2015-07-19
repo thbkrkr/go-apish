@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	buildTime    = "undefined"
-	buildSha1    = "undefined"
+	gitCommit    = "undefined"
+	buildDate    = "undefined"
 	argPort      = flag.Int("port", 4242, "port to listen")
 	apiKey       = flag.String("apiKey", "42", "API key to authenticate")
 	apiKeyHeader = flag.String("apiKeyHeader", "X-apish-auth", "API key header name to authenticate")
@@ -43,7 +43,7 @@ func listScripts(w http.ResponseWriter, r *http.Request) {
 }
 
 func version(w http.ResponseWriter, r *http.Request) {
-	v := fmt.Sprintf("{\"version\":\"%v.%v\"}", buildSha1, buildTime)
+	v := fmt.Sprintf("{\"version\":\"%v.%v\"}", gitCommit, buildDate)
 	io.WriteString(w, string(v))
 }
 
