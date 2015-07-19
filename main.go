@@ -1,82 +1,107 @@
 package main // import "github.com/thbkrkr/go-apish"
 
 import (
-    "bytes"
-    "flag"
-    "fmt"
-    "io"
-    "io/ioutil"
-    "log"
-    "net/http"
-    "os/exec"
-    "time"
+	"bytes"
+	"flag"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/thbkrkr/go-apish/pkg/handlers"
 )
 
-var argPort = flag.Int("port", 4242, "port to listen")
-var apiKey = flag.String("apiKey", "42", "API key to authenticate")
-var apiKeyHeader = flag.String("apiKeyHeader", "X-apish-auth", "API key header name to authenticate")
+var (
+	buildTime    = "undefined"
+	buildSha1    = "undefined"
+	argPort      = flag.Int("port", 4242, "port to listen")
+	apiKey       = flag.String("apiKey", "42", "API key to authenticate")
+	apiKeyHeader = flag.String("apiKeyHeader", "X-apish-auth", "API key header name to authenticate")
+)
 
-const ok = "{\"ok\": true, \"status\": 200}"
 const scriptsDir = "./scripts"
 
-func ls(w http.ResponseWriter, r *http.Request) {
-  var buffer bytes.Buffer
-  files, _ := ioutil.ReadDir("./scripts")
-  
-  hostname := "localhost"
-  baseUrl := fmt.Sprintf("\"http://%v:%v/", hostname, *argPort)
+func listScripts(w http.ResponseWriter, r *http.Request) {
+	var buffer bytes.Buffer
+	files, _ := ioutil.ReadDir(scriptsDir)
 
-  buffer.WriteString("[")
-  for _, f := range files {
-    buffer.WriteString(baseUrl)
-    buffer.WriteString(f.Name())
-    buffer.WriteString("\",")
-  }
-  buffer.WriteString("\"/ls\"]")
+	hostname := "localhost"
+	baseURL := fmt.Sprintf("http://%v:%v", hostname, *argPort)
 
-  io.WriteString(w, buffer.String())
-  return
+	buffer.WriteString("[")
+	for _, f := range files {
+		url := fmt.Sprintf("\"%v/%v\",", baseURL, f.Name())
+		buffer.WriteString(url)
+	}
+	buffer.WriteString("\"/ls\"]")
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	io.WriteString(w, buffer.String())
+	return
 }
 
-func biim(w http.ResponseWriter, r *http.Request) {
+func version(w http.ResponseWriter, r *http.Request) {
+	v := fmt.Sprintf("{\"version\":\"%v.%v\"}", buildSha1, buildTime)
+	io.WriteString(w, string(v))
+}
 
-  script := fmt.Sprintf("./scripts%v", r.URL.String())
+//ype appHandler func(http.ResponseWriter, *http.Request) (int, error)
 
-  // '/' => OK  
-  if script == "./scripts/" {
-    io.WriteString(w, ok)
-    return
-  }
+type appHandler func(http.ResponseWriter, *http.Request)
 
-  if r.Header.Get(*apiKeyHeader) != *apiKey {
-     http.Error(w, "{\"error\":\"Invalid API key\"}", 401)
-    return
-  }
+func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get(*apiKeyHeader) != *apiKey {
+		http.Error(w, "{\"error\":\"Invalid API key\"}", 401)
+		return
+	}
+	fn(w, r)
 
-  stdout, err := exec.Command(script).Output()
-
-  if err != nil {
-    http.Error(w, fmt.Sprintf("{\"error\":\"%v\"}", err.Error()), 500)
-    return
-  }
-
-  io.WriteString(w, string(stdout))
+	/*if status, err := fn(w, r); err != nil {
+		// We could also log our errors centrally:
+		// i.e. log.Printf("HTTP %d: %v", err)
+		switch status {
+		// We can have cases as granular as we like, if we wanted to
+		// return custom errors for specific status codes.
+		case http.StatusNotFound:
+			http.NotFound(w, r)
+		case http.StatusInternalServerError:
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		default:
+			// Catch any other errors we haven't explicitly handled
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+	}*/
 }
 
 func main() {
-  flag.Parse()
-  startTime := time.Now()
+	flag.Parse()
+	startTime := time.Now()
 
-  // Register a ping
-  http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, time.Since(startTime).String())
-  })
+	mux := http.NewServeMux()
 
-  http.HandleFunc("/ls", ls)
+	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		uptime := fmt.Sprintf("{\"uptime\":\"%v\"}", time.Since(startTime))
+		io.WriteString(w, string(uptime))
+	})
 
-  http.HandleFunc("/", biim)
+	mux.HandleFunc("/version", version)
+	mux.HandleFunc("/ls", listScripts)
 
-  addr := fmt.Sprintf(":%v", *argPort)
-  log.Printf("Magic server started on port %s", addr)
-  log.Fatal(http.ListenAndServe(addr, nil))
+	mux.HandleFunc("/", appHandler(handlers.ExecScript))
+
+	/*	mux.HandleFunc("/1", func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get(*apiKeyHeader) != *apiKey {
+				http.Error(w, "{\"error\":\"Invalid API key\"}", 401)
+				return
+			}
+			handlers.ExecScript(w, r)
+		})
+	*/
+
+	http.Handle("/", mux)
+	addr := fmt.Sprintf(":%v", *argPort)
+	log.Printf("Magic server started on port %d", *argPort)
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
