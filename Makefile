@@ -1,25 +1,27 @@
 GIT_COMMIT = $(shell git rev-parse --short HEAD)
 BUILD_DATE = $(shell date '+%Y%m%d-%H%M%S')
+NAME 		= apish
+REPO 		= krkr/$(NAME)
+GOPATH 		= $(shell pwd)/../../../..
 
-build:
-	go build -ldflags "-X main.gitCommit $(GIT_COMMIT) -X main.buildDate $(BUILD_DATE)"
+build: build-binary build-image
 
 build-in-docker:
-	docker run --rm -v $(shell pwd):/src -t -i centurylink/golang-builder
+	@echo "--> Build $(NAME) go binary inside Docker"
+	docker run --rm \
+		-w /go/src/github.com/thbkrkr/go-apish \
+		-v ${GOPATH}:/go \
+		-e CGO_ENABLED=0 -e GOOS=linux \
+		-ti golang:1.5.1 \
+			go build -a -installsuffix cgo -o $(NAME) \
+				-ldflags "-X=main.gitCommit=$(GIT_COMMIT) -X=main.buildDate=$(BUILD_DATE)"
 
-run: build
-	./go-apish -port=1234 -apiKeyHeader=X-pof-auth -apiKey=E7D9EJJD87EH7ED87H
+build-image:
+	@echo "-->  Package $(NAME) go binary in Docker"
+	@docker build --rm -t $(REPO) .
 
-define exec =
-	@echo "\033[0;33mGET \033[0m/$(1)"
-	@curl -sH 'X-pof-auth:E7D9EJJD87EH7ED87H' localhost:1234/$(1) | jq .
-endef
+push:
+	docker push $(REPO)
 
-test:
-	$(call exec,version)
-	$(call exec,ls)
-	$(call exec,date.sh)
-	$(call exec,ping)
-
-stop:
-	pkill go-apish
+run:
+	docker run -d -p 80:4242 $(REPO)
