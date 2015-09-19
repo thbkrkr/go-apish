@@ -16,8 +16,9 @@ var (
 	buildDate = "undefined"
 
 	port          = flag.Int("port", 4242, "HTTP port to listen")
-	adminPassword = flag.String("adminPassword", "42", "Admin password")
-	scriptsDir    = flag.String("scriptsDir", "./api", "API directory (sh scripts and html pages)")
+	adminPassword = flag.String("adminPassword", "42", "Admin password for basic auth")
+	apiKey        = flag.String("apiKey", "42", "API key for header auth")
+	apiDir        = flag.String("apiDir", "./api", "API directory (sh scripts and html pages)")
 )
 
 func ConfigRuntime() {
@@ -40,8 +41,7 @@ func StartGin() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	time.Sleep(time.Second)
-	log.Printf("[info] Magic API started in %v on %s\n", time.Since(start), sport)
+	log.Printf("[info] API started in %v on %s\n", time.Since(start), sport)
 
 	for {
 		s.ListenAndServe()
@@ -49,6 +49,7 @@ func StartGin() {
 }
 
 func main() {
+	flag.Parse()
 	ConfigRuntime()
 	StartGin()
 }

@@ -1,62 +1,44 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
+	h "github.com/thbkrkr/go-apish/handlers"
+	m "github.com/thbkrkr/go-apish/middlewares"
 )
-
-func CORSMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		domain := "*"
-		c.Writer.Header().Set("Access-Control-Allow-Origin", domain)
-		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(200)
-		} else {
-			c.Next()
-		}
-	}
-}
 
 func Router() *gin.Engine {
 	router := gin.Default()
 
-	router.Use(CORSMiddleware())
+	router.Use(m.CORSMiddleware())
 
 	// Default routes
 	router.GET("/", index)
 	router.GET("/favicon.ico", favicon)
 
-	// Basic authentication
-	authorized := router.Group("/", gin.BasicAuth(gin.Accounts{
-		"zuperadmin": *adminPassword,
-	}))
+	// Authentication
+	authorized := router.Group("/", m.AuthMiddleware(
+		*apiKey,
+		gin.Accounts{
+			"zuperadmin": *adminPassword,
+		},
+	))
 
 	// Version (commit and date)
-	authorized.GET("/version", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"git_commit": gitCommit,
-			"build_date": buildDate,
-		})
-	})
+	authorized.GET("/version", version)
 
-	// List scripts
+	lsHandler := &h.LsHandler{ApiDir: apiDir}
+	execHandler := &h.ExecHandler{ApiDir: apiDir}
+
+	// List resources
 	authorized.GET("/ls", func(c *gin.Context) {
-		listResources(c)
+		lsHandler.ListResources(c)
 	})
 
-	// Scripts API
-	authorized.GET("/api/*path", execScript)
+	// API propulsed by shell scripts
+	authorized.GET("/api/*path", execHandler.ExecScript)
 
-	// Static HTML
-	htmlDir := fmt.Sprintf("%s/_static", *scriptsDir)
-	authorized.Static("/s/", htmlDir)
+	// Static files
+	authorized.Static("/s/", *apiDir+"/_static")
 
 	return router
 }
@@ -73,4 +55,11 @@ func index(c *gin.Context) {
 
 func favicon(c *gin.Context) {
 	c.JSON(200, nil)
+}
+
+func version(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"git_commit": gitCommit,
+		"build_date": buildDate,
+	})
 }

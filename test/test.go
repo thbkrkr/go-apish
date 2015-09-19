@@ -18,7 +18,7 @@ type BasicAuth struct {
 	Password string
 }
 
-func MakeHttp(t *testing.T, verb string, path string, json string, auth *BasicAuth) (int, string) {
+func MakeHttp(t *testing.T, verb string, path string, json string, auth *BasicAuth, apiKey *string) (int, string) {
 	reader := strings.NewReader(json)
 
 	url := fmt.Sprintf("%s%s%s", ServerURL, path, PrefixURL)
@@ -26,6 +26,9 @@ func MakeHttp(t *testing.T, verb string, path string, json string, auth *BasicAu
 
 	if auth != nil {
 		req.SetBasicAuth(auth.Username, auth.Password)
+	}
+	if apiKey != nil {
+		req.Header.Set("X-Auth", *apiKey)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -45,18 +48,14 @@ func MakeHttp(t *testing.T, verb string, path string, json string, auth *BasicAu
 	return resp.StatusCode, string(body)
 }
 
-/*func Get(t *testing.T, path string) (int, string) {
-	return MakeHttp(t, "GET", path, "", nil)
+func Get(t *testing.T, path string, auth *BasicAuth) (int, string) {
+	return MakeHttp(t, "GET", path, "", auth, nil)
 }
 
-func Post(t *testing.T, path string, json string) (int, string) {
-	return MakeHttp(t, "POST", path, json, nil)
-}*/
-
-func Get(t *testing.T, path string, auth *BasicAuth) (int, string) {
-	return MakeHttp(t, "GET", path, "", auth)
+func Get2(t *testing.T, path string, apiKey *string) (int, string) {
+	return MakeHttp(t, "GET", path, "", nil, apiKey)
 }
 
 func Post(t *testing.T, path string, json string, auth *BasicAuth) (int, string) {
-	return MakeHttp(t, "POST", path, json, auth)
+	return MakeHttp(t, "POST", path, json, auth, nil)
 }
