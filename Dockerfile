@@ -1,9 +1,8 @@
 FROM alpine:3.2
 
-RUN apk --update add bash && \
+RUN apk --update add bash jq curl && \
     rm -rf /var/cache/apk/*
 
-COPY apish /
-COPY api /api
+COPY go-apish /
 
-ENTRYPOINT ["/apish"]
+CMD ["/go-apish"]

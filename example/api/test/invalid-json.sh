@@ -1,5 +1,6 @@
 #!/bin/sh
+set -eu
 
-echo '{
+echo '[{
   "pong": true
 }'
