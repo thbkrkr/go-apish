@@ -22,15 +22,13 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	scripts := make([]string, 0)
 	pages := make([]string, 0)
 
-	hostname := c.Request.Host
-	hostname = strings.Replace(hostname, "/", "", -1)
-	baseUrl := fmt.Sprintf("http://%v", hostname)
+	hostname := strings.Replace(c.Request.Host, "/", "", -1)
 
 	// List scripts
 	err := filepath.Walk(*h.ApiDir, func(path string, f os.FileInfo, err error) error {
 		if strings.HasSuffix(path, "sh") {
-			scriptUrl := fmt.Sprintf("%v/%v", baseUrl, strings.Replace(path, ".sh", "", -1))
-			scripts = append(scripts, scriptUrl)
+			url := fileToUrl(hostname, "api", path, *h.ApiDir)
+			scripts = append(scripts, url)
 		}
 		return nil
 	})
@@ -47,8 +45,7 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	// List static files
 	err = filepath.Walk(htmlDir, func(path string, f os.FileInfo, err error) error {
 		if f != nil && !f.IsDir() {
-			staticPath := strings.Replace(path, "api/"+staticDir, "s", -1)
-			url := fmt.Sprintf("%v/%v", baseUrl, staticPath)
+			url := fileToUrl(hostname, "s", path, *h.ApiDir+"/_static")
 			pages = append(pages, url)
 		}
 		return nil
@@ -64,4 +61,14 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 		Scripts: scripts,
 		Pages:   pages,
 	})
+}
+
+func fileToUrl(hostname string, prefix string, path string, apiDir string) string {
+	// Remove ./ from apiDir
+	apiDir = strings.Replace(apiDir, "./", "", -1)
+	// Replace $apiDir by prefix
+	filePath := strings.Replace(path, apiDir, prefix, -1)
+	baseUrl := fmt.Sprintf("http://%v", hostname)
+
+	return fmt.Sprintf("%v/%v", baseUrl, strings.Replace(filePath, ".sh", "", -1))
 }
