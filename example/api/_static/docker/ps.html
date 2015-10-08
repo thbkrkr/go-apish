@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>apish</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed" rel="stylesheet">
+    <link href="/s/css/styles.css" rel="stylesheet">
+  </head>
+  <body>
+
+    <h3>docker ps</h3>
+    <div id="ui-json" class="ui">
+    </div>
+
+    <script id="tpl-json" type="text/ractive">
+      <table class="table">
+      {{#each .:i}}
+       <tr>
+          <td>{{name}}</td>
+          <td>{{id}}</td>
+          <td>{{ports}}</td>
+          <td>{{status}}</td>
+          <td>{{created_at}}</td>
+      </tr>
+      {{/each}}
+      </table>
+    </script>
+
+    <script src="http://cdn.ractivejs.org/latest/ractive.min.js"></script>
+    <script src="/s/js/script.js"></script>
+    
+    <script>
+      get("/api/docker/ps", "#ui-json", "#tpl-json");
+    </script>
+    
+  </body>
+</html>

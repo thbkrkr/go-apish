@@ -1,14 +1,14 @@
 body {
-    padding-top: 5em;
+    padding: 1em;
     background: #EEE;
     font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
     transition: background-color 2s linear;
-    color: transparent;
 }
 
-.ui {
+.date-zone {
+    padding-top: 3em;
     text-align: center;
-    //color: #4dd0e1;
+    color: #4dd0e1;
     -webkit-transition: color 0.9s, -webkit-transform 1s;
     transition: color 0.9s, transform 1s;
     -webkit-transform: rotate(-5deg);
@@ -16,7 +16,7 @@ body {
 }
 
 .animate {
-    //color: #ffb74d;
+    color: #ffb74d;
     -webkit-transform: rotate(5deg);
     transform: rotate(5deg);
 }
@@ -28,4 +28,12 @@ body {
 .human_date {
     padding-top: 1em;
     font-size: 2em;
+}
+
+.ui {
+    color: #444;
+}
+
+.table tr td {
+    padding-right: 1em;
 }

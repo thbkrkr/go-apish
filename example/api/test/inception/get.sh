@@ -1,10 +1,10 @@
 #!/bin/sh
 set -eu
 
-c1="curl -s io:4242"
-c2="curl -s io:4242/api/time/date"
-c3='curl -s -u zuperadmin:42 io:4242/api/time/date'
-c4='curl -s -u zuperadmin:42 io:4242/api/test/param?q=hello'
+c1="curl -s -m 1 172.17.42.1"
+c2="curl -s -m 1 172.17.42.1/api/time/date"
+c3='curl -s -m 1 -u zuperadmin:42 172.17.42.1/api/time/date'
+c4='curl -s -m 1 -u zuperadmin:42 172.17.42.1/api/test/param?q=hello'
 
 w='{"status":"%{http_code}","time":"%{time_total}"}'
 
