@@ -46,7 +46,7 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 
 	// List static files
 	err = filepath.Walk(htmlDir, func(path string, f os.FileInfo, err error) error {
-		if !f.IsDir() {
+		if f != nil && !f.IsDir() {
 			staticPath := strings.Replace(path, "api/"+staticDir, "s", -1)
 			url := fmt.Sprintf("%v/%v", baseUrl, staticPath)
 			pages = append(pages, url)
