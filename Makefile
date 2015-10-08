@@ -20,3 +20,21 @@ push:
 
 run:
 	docker run -d -p 80:4242 krkr/apish
+
+golive:
+	gohere
+	golive -apiDir=example/api
+
+deploy-example:
+	@make -C example build
+	docker tag -f apish-example sailabove.io/krkr/apish-demo
+	docker push sailabove.io/krkr/apish-demo
+
+sail-add:
+	sail services add krkr/apish-demo -p 80:4242 apish-demo
+
+sail-redeploy:
+	sail services redeploy apish-demo
+
+open:
+	sensible-browser http://apish-demo.krkr.app.runabove.io
