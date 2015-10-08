@@ -63,5 +63,5 @@ func (h *ExecHandler) ExecScript(c *gin.Context) {
 	}
 
 	c.JSON(200, someJson)
-	log.Printf("[info] executing `%s`: %s", script, stdout)
+	//log.Printf("[info] executing `%s`: %s", script, stdout)
 }
