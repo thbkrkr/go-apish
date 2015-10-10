@@ -26,7 +26,7 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 
 	// List scripts
 	err := filepath.Walk(*h.ApiDir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(path, "sh") {
+		if strings.HasSuffix(path, "sh") && !strings.Contains(path, "_static") {
 			url := fileToUrl(hostname, "api", path, *h.ApiDir)
 			scripts = append(scripts, url)
 		}
