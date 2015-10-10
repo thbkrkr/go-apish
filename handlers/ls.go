@@ -16,11 +16,13 @@ type LsHandler struct {
 type resources struct {
 	Scripts []string `json:"api"`
 	Pages   []string `json:"html"`
+	Static  []string `json:"static"`
 }
 
 func (h *LsHandler) ListResources(c *gin.Context) {
 	scripts := make([]string, 0)
 	pages := make([]string, 0)
+	static := make([]string, 0)
 
 	hostname := strings.Replace(c.Request.Host, "/", "", -1)
 
@@ -42,11 +44,26 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	staticDir := "_static"
 	htmlDir := fmt.Sprintf("%s/%s", *h.ApiDir, staticDir)
 
-	// List static files
+	// List html files
 	err = filepath.Walk(htmlDir, func(path string, f os.FileInfo, err error) error {
-		if f != nil && !f.IsDir() {
+		if strings.HasSuffix(path, "html") {
 			url := fileToUrl(hostname, "s", path, *h.ApiDir+"/_static")
 			pages = append(pages, url)
+		}
+		return nil
+	})
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// List static files
+	err = filepath.Walk(htmlDir, func(path string, f os.FileInfo, err error) error {
+		if f != nil && !f.IsDir() && !strings.HasSuffix(path, "html") {
+			url := fileToUrl(hostname, "s", path, *h.ApiDir+"/_static")
+			static = append(static, url)
 		}
 		return nil
 	})
@@ -60,6 +77,7 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	c.JSON(200, resources{
 		Scripts: scripts,
 		Pages:   pages,
+		Static:  static,
 	})
 }
 
@@ -70,5 +88,10 @@ func fileToUrl(hostname string, prefix string, path string, apiDir string) strin
 	filePath := strings.Replace(path, apiDir, prefix, -1)
 	baseUrl := fmt.Sprintf("http://%v", hostname)
 
-	return fmt.Sprintf("%v/%v", baseUrl, strings.Replace(filePath, ".sh", "", -1))
+	if strings.Contains(path, "_static") {
+		return fmt.Sprintf("%v/%v", baseUrl, filePath)
+	} else {
+		return fmt.Sprintf("%v/%v", baseUrl, strings.Replace(filePath, ".sh", "", -1))
+	}
+
 }
