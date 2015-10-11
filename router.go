@@ -16,12 +16,16 @@ func Router() *gin.Engine {
 	router.GET("/favicon.ico", favicon)
 
 	// Authentication
-	authorized := router.Group("/", m.AuthMiddleware(
-		*apiKey,
-		gin.Accounts{
-			"zuperadmin": *adminPassword,
-		},
-	))
+	authorized := router.Group("/")
+
+	if *password != "" {
+		authorized = router.Group("/", m.AuthMiddleware(
+			*apiKey,
+			gin.Accounts{
+				"zuperadmin": *password,
+			},
+		))
+	}
 
 	// Version (commit and date)
 	authorized.GET("/version", version)
