@@ -1,6 +1,9 @@
 package main
 
 import (
+	"net/http"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	h "github.com/thbkrkr/go-apish/handlers"
 	m "github.com/thbkrkr/go-apish/middlewares"
@@ -49,12 +52,25 @@ func Router() *gin.Engine {
 
 /** Base routes */
 
+func indexExists() bool {
+	if _, err := os.Stat(*apiDir + "/_static/index.html"); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
+}
+
 func index(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"ok":     true,
-		"status": 200,
-		"name":   "go-apish",
-	})
+	if indexExists() {
+		c.Redirect(http.StatusMovedPermanently, "/s")
+	} else {
+		c.JSON(200, gin.H{
+			"ok":     true,
+			"status": 200,
+			"name":   "go-apish",
+		})
+	}
 }
 
 func favicon(c *gin.Context) {
