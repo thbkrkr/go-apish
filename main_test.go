@@ -20,6 +20,8 @@ var auth = &test.BasicAuth{"zuperadmin", "42"}
 
 func init() {
 	gin.SetMode(gin.TestMode)
+	*apiDir = "example/api"
+	*password = "42"
 	server = httptest.NewServer(Router())
 
 	test.ServerURL = server.URL
