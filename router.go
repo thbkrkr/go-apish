@@ -9,6 +9,8 @@ import (
 	m "github.com/thbkrkr/go-apish/middlewares"
 )
 
+var basicAuthUser = "zuperadmin"
+
 func Router() *gin.Engine {
 	router := gin.Default()
 
@@ -25,7 +27,7 @@ func Router() *gin.Engine {
 		authorized = router.Group("/", m.AuthMiddleware(
 			*apiKey,
 			gin.Accounts{
-				"zuperadmin": *password,
+				basicAuthUser: *password,
 			},
 		))
 	}
@@ -43,6 +45,7 @@ func Router() *gin.Engine {
 
 	// API propulsed by shell scripts
 	authorized.GET("/api/*path", execHandler.ExecScript)
+	authorized.POST("/api/*path", execHandler.PostExecScript)
 
 	// Static files
 	authorized.Static("/s/", *apiDir+"/_static")
