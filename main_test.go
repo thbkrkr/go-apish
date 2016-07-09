@@ -55,7 +55,7 @@ func TestAuthentication(t *testing.T) {
 
 func TestScripts(t *testing.T) {
 	status, _ := test.Get(t, "/api/nothing", auth)
-	assert.Equal(t, 500, status, "should get a 200")
+	assert.Equal(t, 404, status, "should get a 404")
 
 	status, _ = test.Get(t, "/api/time/date", auth)
 	assert.Equal(t, 200, status, "should get a 200")
@@ -71,7 +71,7 @@ func TestPages(t *testing.T) {
 	status, _ := test.Get(t, "/s/", auth)
 	assert.Equal(t, 200, status, "should get a 200")
 
-	status, _ = test.Get(t, "/s/api.html", auth)
+	status, _ = test.Get(t, "/s/date.html", auth)
 	assert.Equal(t, 200, status, "should get a 200")
 
 	status, _ = test.Get(t, "/s/css/styles.css", auth)

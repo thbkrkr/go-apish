@@ -47,6 +47,8 @@ func Router() *gin.Engine {
 	authorized.GET("/api/*path", execHandler.ExecScript)
 	authorized.POST("/api/*path", execHandler.PostExecScript)
 
+	authorized.POST("/docker", h.DockerRun)
+
 	// Static files
 	authorized.Static("/s/", *apiDir+"/_static")
 
