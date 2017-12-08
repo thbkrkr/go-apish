@@ -1,8 +1,5 @@
-FROM alpine:3.2
+FROM alpine:3.7
 
-RUN apk --update add bash jq curl && \
-    rm -rf /var/cache/apk/*
-
-COPY go-apish /
-
+RUN apk --no-cache add bash jq curl
+COPY go-apish /go-apish
 CMD ["/go-apish"]
