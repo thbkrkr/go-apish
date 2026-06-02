@@ -6,14 +6,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	h "github.com/thbkrkr/go-apish/handlers"
-	m "github.com/thbkrkr/go-apish/middlewares"
 )
 
 func Router() *gin.Engine {
 	router := gin.Default()
 
-	router.Use(m.CORSMiddleware())
+	router.Use(CORSMiddleware())
 
 	// Default routes (no auth: useful for health checks)
 	router.GET("/", index)
@@ -23,7 +21,7 @@ func Router() *gin.Engine {
 	authorized := router.Group("/")
 
 	if *password != "" {
-		authorized = router.Group("/", m.AuthMiddleware(
+		authorized = router.Group("/", AuthMiddleware(
 			*apiKey,
 			gin.Accounts{
 				*user: *password,
@@ -33,8 +31,8 @@ func Router() *gin.Engine {
 		logrus.Warn("no -password set: authentication is DISABLED and all endpoints are publicly accessible")
 	}
 
-	lsHandler := &h.LsHandler{ApiDir: *apiDir}
-	execHandler := &h.ExecHandler{ApiDir: *apiDir}
+	lsHandler := &LsHandler{ApiDir: *apiDir}
+	execHandler := &ExecHandler{ApiDir: *apiDir}
 
 	// List resources
 	authorized.GET("/ls", func(c *gin.Context) {
