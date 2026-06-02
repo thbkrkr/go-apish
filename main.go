@@ -15,10 +15,11 @@ var (
 	gitCommit = "undefined"
 	buildDate = "undefined"
 
-	port     = flag.Int("port", 4242, "HTTP port to listen")
-	password = flag.String("password", "", "Admin password for basic auth")
-	apiKey   = flag.String("apiKey", "42", "API key for header auth")
-	apiDir   = flag.String("apiDir", "./api", "API directory (sh scripts and html pages)")
+	port         = flag.Int("port", 4242, "HTTP port to listen")
+	password     = flag.String("password", "", "Admin password for basic auth")
+	apiKey       = flag.String("apiKey", "42", "API key for header auth")
+	apiDir       = flag.String("apiDir", "./api", "API directory (sh scripts and html pages)")
+	enableDocker = flag.Bool("enableDocker", false, "Enable the /docker endpoint (grants full host access via docker run)")
 )
 
 func ConfigRuntime() {

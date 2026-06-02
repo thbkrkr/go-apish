@@ -28,7 +28,7 @@ func DockerRun(c *gin.Context) {
 	}
 
 	// Exec docker run
-	args := append([]string{"run"}, strings.Split(form.Cmd, " ")...)
+	args := append([]string{"run"}, splitArgs(form.Cmd)...)
 	output, err := exec.Command("docker", args...).CombinedOutput()
 	if err != nil {
 		message := err.Error() + ": " + strings.Replace(string(output), "\n", " ", -1)
@@ -45,4 +45,42 @@ func DockerRun(c *gin.Context) {
 	}
 
 	c.String(200, string(output))
+}
+
+// splitArgs splits a command string into arguments, honoring single and double
+// quotes so that quoted arguments containing spaces stay intact and consecutive
+// spaces don't produce empty arguments.
+func splitArgs(s string) []string {
+	args := make([]string, 0)
+	var cur strings.Builder
+	var quote rune
+	inWord := false
+
+	for _, r := range s {
+		switch {
+		case quote != 0:
+			if r == quote {
+				quote = 0
+			} else {
+				cur.WriteRune(r)
+			}
+			inWord = true
+		case r == '\'' || r == '"':
+			quote = r
+			inWord = true
+		case r == ' ' || r == '\t':
+			if inWord {
+				args = append(args, cur.String())
+				cur.Reset()
+				inWord = false
+			}
+		default:
+			cur.WriteRune(r)
+			inWord = true
+		}
+	}
+	if inWord {
+		args = append(args, cur.String())
+	}
+	return args
 }
