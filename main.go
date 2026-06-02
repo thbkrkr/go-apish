@@ -16,8 +16,9 @@ var (
 	buildDate = "undefined"
 
 	port         = flag.Int("port", 4242, "HTTP port to listen")
+	user         = flag.String("user", "zuperadmin", "Username for basic auth")
 	password     = flag.String("password", "", "Admin password for basic auth")
-	apiKey       = flag.String("apiKey", "42", "API key for header auth")
+	apiKey       = flag.String("apiKey", "", "API key for X-Auth header auth (empty disables header auth)")
 	apiDir       = flag.String("apiDir", "./api", "API directory (sh scripts and html pages)")
 	enableDocker = flag.Bool("enableDocker", false, "Enable the /docker endpoint (grants full host access via docker run)")
 )
