@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"net/http/httptest"
 	"testing"
 
@@ -11,12 +10,9 @@ import (
 	test "github.com/thbkrkr/go-apish/test"
 )
 
-var (
-	server *httptest.Server
-	reader io.Reader //Ignore this for now
-)
+var server *httptest.Server
 
-var auth = &test.BasicAuth{"zuperadmin", "42"}
+var auth = &test.BasicAuth{Username: "zuperadmin", Password: "42"}
 
 func init() {
 	gin.SetMode(gin.TestMode)
@@ -51,7 +47,7 @@ func TestAuthentication(t *testing.T) {
 	status, _ := test.Get(t, "/api/time/date", nil)
 	assert.Equal(t, 401, status, "should get a 401")
 
-	auth := &test.BasicAuth{"zuperadmin", "42"}
+	auth := &test.BasicAuth{Username: "zuperadmin", Password: "42"}
 	status, _ = test.Get(t, "/api/time/date", auth)
 	assert.Equal(t, 200, status, "should get a 200")
 
