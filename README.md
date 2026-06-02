@@ -1,13 +1,69 @@
-# apish - Rest API for shell scripts
+# apish — REST API for shell scripts
 
-Write shell scripts that return JSON ([example](example/api/time/date.sh)).
+`apish` turns a directory of shell scripts into a JSON REST API and serves
+static files alongside them. Each script must print **valid JSON** to stdout
+([example](example/api/time/date.sh)); the server parses it and returns it to
+the caller.
 
-Serve static files from [api/_static](example/api/_static) directory.
+## Build & run
 
-Build
+```sh
+make binary   # build the ./go-apish binary locally
+make build    # build the krkr/apish Docker image
+make run      # run the image, mounting ./example as /api on port 80
+```
 
-    make build
+Run the binary directly against the example API:
 
-Run
+```sh
+./go-apish -apiDir=example/api -password=secret
+```
 
-    make run
+## Flags
+
+| Flag            | Default     | Description                                              |
+| --------------- | ----------- | -------------------------------------------------------- |
+| `-port`         | `4242`      | HTTP port to listen on                                   |
+| `-apiDir`       | `./api`     | Directory of `.sh` scripts and `_static` files           |
+| `-user`         | `zuperadmin`| Basic-auth username                                      |
+| `-password`     | *(empty)*   | Basic-auth password. **Empty disables all auth.**        |
+| `-apiKey`       | *(empty)*   | Key for `X-Auth` header auth. Empty disables header auth.|
+| `-enableDocker` | `false`     | Enable `POST /docker` (see Security)                     |
+
+## Endpoints
+
+| Method | Path         | Description                                                      |
+| ------ | ------------ | ---------------------------------------------------------------- |
+| GET    | `/`          | JSON status, or redirect to `/s` if `_static/index.html` exists  |
+| GET    | `/version`   | Build commit and date (no auth)                                  |
+| GET    | `/ls`        | List script, HTML and static resource URLs                       |
+| GET    | `/api/*path` | Run `<apiDir>/<path>.sh`; `?q=value` is passed as `$1`           |
+| POST   | `/api/*path` | Run `<apiDir>/<path>.sh` with the request body piped to stdin    |
+| POST   | `/docker`    | Run `docker run <body.run>` (only when `-enableDocker` is set)    |
+| GET    | `/s/*`       | Serve static files from `<apiDir>/_static`                        |
+
+Scripts must emit valid JSON; otherwise the caller receives `400 Invalid JSON`.
+A script that exits non-zero yields `500` with its error (stderr is logged).
+
+## Authentication
+
+When `-password` is set, all endpoints except `/`, `/favicon.ico` and
+`/version` require either:
+
+- HTTP basic auth (`-user` / `-password`), or
+- an `X-Auth: <apiKey>` header (when `-apiKey` is set).
+
+If `-password` is empty, **the server is fully open** and logs a warning at
+startup.
+
+## Security
+
+`apish` executes shell scripts and, optionally, arbitrary containers — treat it
+as a privileged service:
+
+- Always set `-password` (and ideally an `-apiKey`) in any non-local deployment.
+- `-enableDocker` lets callers run **any** `docker run` command, which is
+  effectively root on the host. Leave it off unless you fully trust callers.
+- Scripts receive request input (`$1` / stdin). Build their JSON output with a
+  tool like `jq` so values are safely escaped — see
+  [param.sh](example/api/test/param.sh).
