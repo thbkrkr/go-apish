@@ -14,9 +14,6 @@ binary:
 test:
 	go test ./...
 
-release:
-	./release.sh $(GIT_COMMIT)
-
 push:
 	docker push krkr/apish
 
