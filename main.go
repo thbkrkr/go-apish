@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,12 +20,6 @@ var (
 	apiKey   = flag.String("apiKey", "", "API key for X-Auth header auth (empty disables header auth)")
 	apiDir   = flag.String("apiDir", "./api", "API directory (sh scripts and html pages)")
 )
-
-func ConfigRuntime() {
-	nuCPU := runtime.NumCPU()
-	runtime.GOMAXPROCS(nuCPU)
-	logrus.Infof("Running with %d CPUs", nuCPU)
-}
 
 func StartGin() {
 	start := time.Now()
@@ -53,6 +46,5 @@ func StartGin() {
 
 func main() {
 	flag.Parse()
-	ConfigRuntime()
 	StartGin()
 }
