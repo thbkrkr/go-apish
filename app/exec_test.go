@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestScriptPathStaysWithinApiDir(t *testing.T) {
-	h := &ExecHandler{ApiDir: "example/api"}
+	h := &ExecHandler{ApiDir: "../example"}
 
 	cases := map[string]bool{
 		"/time/date":            true,  // normal script

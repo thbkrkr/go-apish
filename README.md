@@ -9,7 +9,7 @@ Serve static files from [_static](example/_static) directory.
 ```sh
 ./go-apish \
   -port=4242 \          # HTTP port
-  -apiDir=example/api \ # directory of .sh scripts and _static files
+  -apiDir=example \     # directory of .sh scripts and _static files
   -user=zuperadmin \    # basic-auth username
   -password=secret \    # basic-auth password (empty = no auth)
   -apiKey=mykey         # X-Auth header key (empty = disabled)

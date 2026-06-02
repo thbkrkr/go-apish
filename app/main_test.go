@@ -17,7 +17,7 @@ var auth = &basicAuth{Username: "zuperadmin", Password: "42"}
 
 func init() {
 	gin.SetMode(gin.TestMode)
-	*apiDir = "../example/api"
+	*apiDir = "../example"
 	*password = "42"
 	*apiKey = "42"
 	server = httptest.NewServer(Router())
@@ -130,6 +130,48 @@ func TestListResources(t *testing.T) {
 	status, body := get(t, "/ls", auth)
 	assert.Equal(t, 200, status, "should get a 200")
 	assert.Contains(t, body, "/api/time/date")
+}
+
+func TestScriptFailure(t *testing.T) {
+	status, body := get(t, "/api/test/fail", auth)
+	assert.Equal(t, 500, status)
+	assert.Contains(t, body, "error")
+}
+
+func TestAuthWrongPassword(t *testing.T) {
+	status, _ := do(t, "GET", "/api/time/date", "", &basicAuth{Username: "zuperadmin", Password: "wrong"}, "")
+	assert.Equal(t, 401, status)
+}
+
+func TestAuthWrongApiKey(t *testing.T) {
+	status, _ := getWithKey(t, "/api/time/date", "wrong")
+	assert.Equal(t, 401, status)
+}
+
+func TestGetWithoutQueryParam(t *testing.T) {
+	status, body := get(t, "/api/test/param", auth)
+	assert.Equal(t, 200, status)
+	assert.Contains(t, body, "param")
+}
+
+func TestPostNotFound(t *testing.T) {
+	status, _ := post(t, "/api/nothing", "", auth)
+	assert.Equal(t, 404, status)
+}
+
+func TestVersionBody(t *testing.T) {
+	status, body := get(t, "/version", nil)
+	assert.Equal(t, 200, status)
+	assert.Contains(t, body, "git_commit")
+	assert.Contains(t, body, "build_date")
+}
+
+func TestListResourcesBody(t *testing.T) {
+	status, body := get(t, "/ls", auth)
+	assert.Equal(t, 200, status)
+	assert.Contains(t, body, "/api/time/date")
+	assert.Contains(t, body, "/api/test/param")
+	assert.Contains(t, body, "/s/")
 }
 
 func TestPathTraversal(t *testing.T) {

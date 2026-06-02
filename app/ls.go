@@ -26,15 +26,21 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 
 	hostname := strings.ReplaceAll(c.Request.Host, "/", "")
 	baseURL := requestScheme(c) + "://" + hostname
-	staticDir := h.ApiDir + "/_static"
+
+	apiDir, err := filepath.Abs(h.ApiDir)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	staticDir := apiDir + "/_static"
 
 	// List API scripts (every .sh outside _static), propagating walk errors.
-	err := filepath.Walk(h.ApiDir, func(path string, f os.FileInfo, err error) error {
+	err = filepath.Walk(apiDir, func(path string, f os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if strings.HasSuffix(path, "sh") && !strings.Contains(path, "_static") {
-			scripts = append(scripts, fileToUrl(baseURL, "api", path, h.ApiDir))
+			scripts = append(scripts, fileToUrl(baseURL, "api", path, apiDir))
 		}
 		return nil
 	})
@@ -88,11 +94,7 @@ func requestScheme(c *gin.Context) string {
 }
 
 func fileToUrl(baseURL string, prefix string, path string, apiDir string) string {
-	// Remove ./ from apiDir
-	apiDir = strings.ReplaceAll(apiDir, "./", "")
-	// Replace $apiDir by prefix
 	filePath := strings.ReplaceAll(path, apiDir, prefix)
-
 	if strings.Contains(path, "_static") {
 		return fmt.Sprintf("%v/%v", baseURL, filePath)
 	}
