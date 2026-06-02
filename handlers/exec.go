@@ -115,24 +115,21 @@ func (h *ExecHandler) PostExecScript(c *gin.Context) {
 		return
 	}
 
-	// Exec script with or without body
+	// Exec script, piping the request body to its stdin
+	cmd := exec.Command(script)
+	cmd.Stdin = c.Request.Body
 
-	c1 := exec.Command(script)
-
-	body := c.Request.Body
 	var buf bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &stderr
 
-	c1.Stdin = body
-	c1.Stdout = &buf
-	_ = c1.Start()
-	_ = c1.Wait()
-
-	if err != nil {
+	if err = cmd.Run(); err != nil {
 		serr := err.Error()
 		c.JSON(500, gin.H{
 			"error": serr,
 		})
-		log.Printf("[error] executing `%s`: %s", path, serr)
+		log.Printf("[error] executing `%s`: %s: %s", path, serr, stderr.String())
 		return
 	}
 
