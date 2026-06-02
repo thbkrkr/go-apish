@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,20 +17,43 @@ type ExecHandler struct {
 	ApiDir *string
 }
 
+// scriptPath resolves the wildcard request path to an absolute `.sh` path and
+// guarantees it stays within ApiDir, preventing path-traversal escapes such as
+// `/api/../../../tmp/evil`. It returns false when the path escapes ApiDir.
+func (h *ExecHandler) scriptPath(reqPath string) (string, bool) {
+	base, err := filepath.Abs(*h.ApiDir)
+	if err != nil {
+		return "", false
+	}
+	// filepath.Join cleans the result, collapsing any `..` segments.
+	script := filepath.Join(base, reqPath+".sh")
+	if script != base && !strings.HasPrefix(script, base+string(os.PathSeparator)) {
+		return "", false
+	}
+	return script, true
+}
+
 func (h *ExecHandler) ExecScript(c *gin.Context) {
 	var stdout []byte
 	var err error
 
-	// Build script name
+	// Build and validate script name
 	path := c.Param("path")
-	script := fmt.Sprintf("%s%s%s", *h.ApiDir, path, ".sh")
+	script, ok := h.scriptPath(path)
+	if !ok {
+		c.JSON(404, gin.H{
+			"error": "Resource not found",
+		})
+		fmt.Printf("[error] invalid resource path: %s\n", path)
+		return
+	}
 
 	// Check script exists
 	if _, err := os.Stat(script); os.IsNotExist(err) {
 		c.JSON(404, gin.H{
 			"error": "Resource not found",
 		})
-		fmt.Printf("[error] resource not found: %s", script)
+		fmt.Printf("[error] resource not found: %s\n", script)
 		return
 	}
 
@@ -70,16 +95,23 @@ func (h *ExecHandler) PostExecScript(c *gin.Context) {
 	var stdout []byte
 	var err error
 
-	// Build script name
+	// Build and validate script name
 	path := c.Param("path")
-	script := fmt.Sprintf("%s%s%s", *h.ApiDir, path, ".sh")
+	script, ok := h.scriptPath(path)
+	if !ok {
+		c.JSON(404, gin.H{
+			"error": "Resource not found",
+		})
+		fmt.Printf("[error] invalid resource path: %s\n", path)
+		return
+	}
 
 	// Check script exists
 	if _, err := os.Stat(script); os.IsNotExist(err) {
 		c.JSON(404, gin.H{
 			"error": "Resource not found",
 		})
-		fmt.Printf("[error] resource not found: %s", script)
+		fmt.Printf("[error] resource not found: %s\n", script)
 		return
 	}
 
