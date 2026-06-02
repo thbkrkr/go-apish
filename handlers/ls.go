@@ -10,7 +10,7 @@ import (
 )
 
 type LsHandler struct {
-	ApiDir *string
+	ApiDir string
 }
 
 type resources struct {
@@ -27,9 +27,9 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	hostname := strings.Replace(c.Request.Host, "/", "", -1)
 
 	// List scripts
-	err := filepath.Walk(*h.ApiDir, func(path string, f os.FileInfo, err error) error {
+	err := filepath.Walk(h.ApiDir, func(path string, f os.FileInfo, err error) error {
 		if strings.HasSuffix(path, "sh") && !strings.Contains(path, "_static") {
-			url := fileToUrl(hostname, "api", path, *h.ApiDir)
+			url := fileToUrl(hostname, "api", path, h.ApiDir)
 			scripts = append(scripts, url)
 		}
 		return nil
@@ -42,12 +42,12 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	}
 
 	staticDir := "_static"
-	htmlDir := fmt.Sprintf("%s/%s", *h.ApiDir, staticDir)
+	htmlDir := fmt.Sprintf("%s/%s", h.ApiDir, staticDir)
 
 	// List html files
 	err = filepath.Walk(htmlDir, func(path string, f os.FileInfo, err error) error {
 		if strings.HasSuffix(path, "html") {
-			url := fileToUrl(hostname, "s", path, *h.ApiDir+"/_static")
+			url := fileToUrl(hostname, "s", path, h.ApiDir+"/_static")
 			pages = append(pages, url)
 		}
 		return nil
@@ -62,7 +62,7 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	// List static files
 	err = filepath.Walk(htmlDir, func(path string, f os.FileInfo, err error) error {
 		if f != nil && !f.IsDir() && !strings.HasSuffix(path, "html") {
-			url := fileToUrl(hostname, "s", path, *h.ApiDir+"/_static")
+			url := fileToUrl(hostname, "s", path, h.ApiDir+"/_static")
 			static = append(static, url)
 		}
 		return nil

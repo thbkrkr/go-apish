@@ -13,14 +13,14 @@ import (
 )
 
 type ExecHandler struct {
-	ApiDir *string
+	ApiDir string
 }
 
 // scriptPath resolves the wildcard request path to an absolute `.sh` path and
 // guarantees it stays within ApiDir, preventing path-traversal escapes such as
 // `/api/../../../tmp/evil`. It returns false when the path escapes ApiDir.
 func (h *ExecHandler) scriptPath(reqPath string) (string, bool) {
-	base, err := filepath.Abs(*h.ApiDir)
+	base, err := filepath.Abs(h.ApiDir)
 	if err != nil {
 		return "", false
 	}

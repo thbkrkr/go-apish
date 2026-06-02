@@ -36,8 +36,8 @@ func Router() *gin.Engine {
 		logrus.Warn("no -password set: authentication is DISABLED and all endpoints are publicly accessible")
 	}
 
-	lsHandler := &h.LsHandler{ApiDir: apiDir}
-	execHandler := &h.ExecHandler{ApiDir: apiDir}
+	lsHandler := &h.LsHandler{ApiDir: *apiDir}
+	execHandler := &h.ExecHandler{ApiDir: *apiDir}
 
 	// List resources
 	authorized.GET("/ls", func(c *gin.Context) {
