@@ -30,7 +30,14 @@ func init() {
 
 func TestBase(t *testing.T) {
 	test.PrefixURL = ""
-	status, _ := test.Get(t, "/", nil)
+
+	// / redirects to /s (index.html exists in the example), which is behind
+	// auth, so the request must carry credentials to follow through to 200.
+	status, _ := test.Get(t, "/", auth)
+	assert.Equal(t, 200, status, "should get a 200")
+
+	// /version is exposed without auth.
+	status, _ = test.Get(t, "/version", nil)
 	assert.Equal(t, 200, status, "should get a 200")
 
 	status, _ = test.Get(t, "/favicon.ico", nil)
@@ -83,4 +90,27 @@ func TestPages(t *testing.T) {
 
 	status, _ = test.Get(t, "/s/js/script.js", auth)
 	assert.Equal(t, 200, status, "should get a 200")
+}
+
+func TestPost(t *testing.T) {
+	status, body := test.Post(t, "/api/test/post", `{"o": 42}`, auth)
+	assert.Equal(t, 200, status, "should get a 200")
+	assert.Contains(t, body, "jackpot")
+}
+
+func TestInvalidJSON(t *testing.T) {
+	status, _ := test.Get(t, "/api/test/invalid-json", auth)
+	assert.Equal(t, 400, status, "invalid JSON output should yield a 400")
+}
+
+func TestListResources(t *testing.T) {
+	status, body := test.Get(t, "/ls", auth)
+	assert.Equal(t, 200, status, "should get a 200")
+	assert.Contains(t, body, "/api/time/date")
+}
+
+func TestPathTraversal(t *testing.T) {
+	// Attempting to escape apiDir must not execute an arbitrary script.
+	status, _ := test.Get(t, "/api/../../../../etc/hostname", auth)
+	assert.NotEqual(t, 200, status, "path traversal must be rejected")
 }
