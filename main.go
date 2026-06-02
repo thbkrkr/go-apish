@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 func ConfigRuntime() {
 	nuCPU := runtime.NumCPU()
 	runtime.GOMAXPROCS(nuCPU)
-	fmt.Printf("[info] Running with %d CPUs\n", nuCPU)
+	logrus.Infof("Running with %d CPUs", nuCPU)
 }
 
 func StartGin() {
@@ -42,12 +42,12 @@ func StartGin() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	log.Printf("[info] API ready in %v, listening on %s\n", time.Since(start), sport)
+	logrus.Infof("API ready in %v, listening on %s", time.Since(start), sport)
 
 	// ListenAndServe only returns on error; log it and exit instead of
 	// silently busy-looping a restart.
 	if err := s.ListenAndServe(); err != nil {
-		log.Fatalf("[error] server stopped: %v", err)
+		logrus.Fatalf("server stopped: %v", err)
 	}
 }
 

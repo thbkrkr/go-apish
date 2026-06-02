@@ -3,13 +3,13 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 type ExecHandler struct {
@@ -39,12 +39,12 @@ func (h *ExecHandler) resolve(c *gin.Context) (string, bool) {
 	script, ok := h.scriptPath(path)
 	if !ok {
 		c.JSON(404, gin.H{"error": "Resource not found"})
-		log.Printf("[error] invalid resource path: %s", path)
+		logrus.Errorf("invalid resource path: %s", path)
 		return "", false
 	}
 	if _, err := os.Stat(script); os.IsNotExist(err) {
 		c.JSON(404, gin.H{"error": "Resource not found"})
-		log.Printf("[error] resource not found: %s", script)
+		logrus.Errorf("resource not found: %s", script)
 		return "", false
 	}
 	return script, true
@@ -59,14 +59,14 @@ func (h *ExecHandler) run(c *gin.Context, script string, cmd *exec.Cmd) {
 
 	if err := cmd.Run(); err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
-		log.Printf("[error] executing `%s`: %s: %s", script, err, stderr.String())
+		logrus.Errorf("executing `%s`: %s: %s", script, err, stderr.String())
 		return
 	}
 
 	var payload any
 	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
 		c.JSON(400, gin.H{"error": "Invalid JSON"})
-		log.Printf("[error] invalid JSON for `%s`: %s", script, stdout.Bytes())
+		logrus.Errorf("invalid JSON for `%s`: %s", script, stdout.Bytes())
 		return
 	}
 

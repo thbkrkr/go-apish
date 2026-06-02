@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	h "github.com/thbkrkr/go-apish/handlers"
 	m "github.com/thbkrkr/go-apish/middlewares"
 )
@@ -33,7 +33,7 @@ func Router() *gin.Engine {
 			},
 		))
 	} else {
-		log.Println("[warn] no -password set: authentication is DISABLED and all endpoints are publicly accessible")
+		logrus.Warn("no -password set: authentication is DISABLED and all endpoints are publicly accessible")
 	}
 
 	lsHandler := &h.LsHandler{ApiDir: apiDir}
