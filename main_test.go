@@ -51,9 +51,7 @@ func TestAuthentication(t *testing.T) {
 	status, _ = test.Get(t, "/api/time/date", auth)
 	assert.Equal(t, 200, status, "should get a 200")
 
-	apiKey := new(string)
-	*apiKey = "42"
-	status, _ = test.Get2(t, "/api/time/date", apiKey)
+	status, _ = test.GetWithKey(t, "/api/time/date", "42")
 	assert.Equal(t, 200, status, "should get a 200")
 }
 

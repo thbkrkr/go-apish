@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -18,44 +18,41 @@ type BasicAuth struct {
 	Password string
 }
 
-func MakeHttp(t *testing.T, verb string, path string, json string, auth *BasicAuth, apiKey *string) (int, string) {
-	reader := strings.NewReader(json)
-
+func do(t *testing.T, verb, path, body string, auth *BasicAuth, apiKey string) (int, string) {
 	url := fmt.Sprintf("%s%s%s", ServerURL, path, PrefixURL)
-	req, err := http.NewRequest(verb, url, reader)
+	req, err := http.NewRequest(verb, url, strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if auth != nil {
 		req.SetBasicAuth(auth.Username, auth.Password)
 	}
-	if apiKey != nil {
-		req.Header.Set("X-Auth", *apiKey)
+	if apiKey != "" {
+		req.Header.Set("X-Auth", apiKey)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+	defer resp.Body.Close()
 
-	if resp.Body == nil {
-		t.Error(err)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
+	out, err := io.ReadAll(resp.Body)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-
-	return resp.StatusCode, string(body)
+	return resp.StatusCode, string(out)
 }
 
 func Get(t *testing.T, path string, auth *BasicAuth) (int, string) {
-	return MakeHttp(t, "GET", path, "", auth, nil)
+	return do(t, "GET", path, "", auth, "")
 }
 
-func Get2(t *testing.T, path string, apiKey *string) (int, string) {
-	return MakeHttp(t, "GET", path, "", nil, apiKey)
+func GetWithKey(t *testing.T, path, apiKey string) (int, string) {
+	return do(t, "GET", path, "", nil, apiKey)
 }
 
-func Post(t *testing.T, path string, json string, auth *BasicAuth) (int, string) {
-	return MakeHttp(t, "POST", path, json, auth, nil)
+func Post(t *testing.T, path, body string, auth *BasicAuth) (int, string) {
+	return do(t, "POST", path, body, auth, "")
 }
