@@ -42,10 +42,12 @@ func StartGin() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	log.Printf("[info] API started in %v on %s\n", time.Since(start), sport)
+	log.Printf("[info] API ready in %v, listening on %s\n", time.Since(start), sport)
 
-	for {
-		s.ListenAndServe()
+	// ListenAndServe only returns on error; log it and exit instead of
+	// silently busy-looping a restart.
+	if err := s.ListenAndServe(); err != nil {
+		log.Fatalf("[error] server stopped: %v", err)
 	}
 }
 
