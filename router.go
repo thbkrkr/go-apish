@@ -86,7 +86,7 @@ func index(c *gin.Context) {
 }
 
 func favicon(c *gin.Context) {
-	c.JSON(200, nil)
+	c.Status(http.StatusNoContent)
 }
 
 func version(c *gin.Context) {

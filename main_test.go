@@ -33,7 +33,7 @@ func TestBase(t *testing.T) {
 	assert.Equal(t, 200, status, "should get a 200")
 
 	status, _ = test.Get(t, "/favicon.ico", nil)
-	assert.Equal(t, 200, status, "should get a 200")
+	assert.Equal(t, 204, status, "should get a 204")
 
 	status, _ = test.Get(t, "/blablabla", nil)
 	assert.Equal(t, 404, status, "should get a 404")
