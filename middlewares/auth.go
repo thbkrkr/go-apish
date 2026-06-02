@@ -1,6 +1,10 @@
 package middlewares
 
-import "github.com/gin-gonic/gin"
+import (
+	"crypto/subtle"
+
+	"github.com/gin-gonic/gin"
+)
 
 var AuthHeaderKey = "X-Auth"
 
@@ -8,12 +12,13 @@ func AuthMiddleware(apiKey string, accounts gin.Accounts) gin.HandlerFunc {
 	basicAuth := gin.BasicAuthForRealm(accounts, "")
 
 	return func(c *gin.Context) {
-		// Try header auth
-		if c.Request.Header.Get(AuthHeaderKey) == apiKey {
+		// Try header auth, comparing in constant time to avoid leaking the
+		// key through response-timing differences.
+		got := c.Request.Header.Get(AuthHeaderKey)
+		if subtle.ConstantTimeCompare([]byte(got), []byte(apiKey)) == 1 {
 			return
-		} else {
-			// Try basic auth
-			basicAuth(c)
 		}
+		// Fall back to basic auth
+		basicAuth(c)
 	}
 }
