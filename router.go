@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 
@@ -30,6 +31,8 @@ func Router() *gin.Engine {
 				basicAuthUser: *password,
 			},
 		))
+	} else {
+		log.Println("[warn] no -password set: authentication is DISABLED and all endpoints are publicly accessible")
 	}
 
 	// Version (commit and date)
