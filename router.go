@@ -65,12 +65,10 @@ func Router() *gin.Engine {
 /** Base routes */
 
 func indexExists() bool {
-	if _, err := os.Stat(*apiDir + "/_static/index.html"); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
+	// Any stat error (not found, permission, ...) means we can't serve it,
+	// so treat it as absent rather than redirecting to an unreadable file.
+	_, err := os.Stat(*apiDir + "/_static/index.html")
+	return err == nil
 }
 
 func index(c *gin.Context) {
