@@ -17,7 +17,6 @@ func Router() *gin.Engine {
 
 	// Default routes (no auth: useful for health checks)
 	router.GET("/", index)
-	router.GET("/favicon.ico", favicon)
 	router.GET("/version", version)
 
 	// Authentication
@@ -71,10 +70,6 @@ func index(c *gin.Context) {
 			"name":   "go-apish",
 		})
 	}
-}
-
-func favicon(c *gin.Context) {
-	c.Status(http.StatusNoContent)
 }
 
 func version(c *gin.Context) {

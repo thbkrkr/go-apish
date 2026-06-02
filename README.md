@@ -45,8 +45,8 @@ A script that exits non-zero yields `500` with its error (stderr is logged).
 
 ## Authentication
 
-When `-password` is set, all endpoints except `/`, `/favicon.ico` and
-`/version` require either:
+When `-password` is set, all endpoints except `/` and `/version` require
+either:
 
 - HTTP basic auth (`-user` / `-password`), or
 - an `X-Auth: <apiKey>` header (when `-apiKey` is set).
