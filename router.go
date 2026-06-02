@@ -17,9 +17,10 @@ func Router() *gin.Engine {
 
 	router.Use(m.CORSMiddleware())
 
-	// Default routes
+	// Default routes (no auth: useful for health checks)
 	router.GET("/", index)
 	router.GET("/favicon.ico", favicon)
+	router.GET("/version", version)
 
 	// Authentication
 	authorized := router.Group("/")
@@ -34,9 +35,6 @@ func Router() *gin.Engine {
 	} else {
 		log.Println("[warn] no -password set: authentication is DISABLED and all endpoints are publicly accessible")
 	}
-
-	// Version (commit and date)
-	authorized.GET("/version", version)
 
 	lsHandler := &h.LsHandler{ApiDir: apiDir}
 	execHandler := &h.ExecHandler{ApiDir: apiDir}
