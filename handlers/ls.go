@@ -25,12 +25,15 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	static := make([]string, 0)
 
 	hostname := strings.Replace(c.Request.Host, "/", "", -1)
+	staticDir := h.ApiDir + "/_static"
 
-	// List scripts
+	// List API scripts (every .sh outside _static), propagating walk errors.
 	err := filepath.Walk(h.ApiDir, func(path string, f os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if strings.HasSuffix(path, "sh") && !strings.Contains(path, "_static") {
-			url := fileToUrl(hostname, "api", path, h.ApiDir)
-			scripts = append(scripts, url)
+			scripts = append(scripts, fileToUrl(hostname, "api", path, h.ApiDir))
 		}
 		return nil
 	})
@@ -41,37 +44,30 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 		return
 	}
 
-	staticDir := "_static"
-	htmlDir := fmt.Sprintf("%s/%s", h.ApiDir, staticDir)
-
-	// List html files
-	err = filepath.Walk(htmlDir, func(path string, f os.FileInfo, err error) error {
-		if strings.HasSuffix(path, "html") {
-			url := fileToUrl(hostname, "s", path, h.ApiDir+"/_static")
-			pages = append(pages, url)
-		}
-		return nil
-	})
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": err.Error(),
+	// List static resources in a single pass, splitting HTML pages from other
+	// files. The _static directory is optional, so skip it when absent.
+	if _, statErr := os.Stat(staticDir); statErr == nil {
+		err = filepath.Walk(staticDir, func(path string, f os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if f.IsDir() {
+				return nil
+			}
+			url := fileToUrl(hostname, "s", path, staticDir)
+			if strings.HasSuffix(path, "html") {
+				pages = append(pages, url)
+			} else {
+				static = append(static, url)
+			}
+			return nil
 		})
-		return
-	}
-
-	// List static files
-	err = filepath.Walk(htmlDir, func(path string, f os.FileInfo, err error) error {
-		if f != nil && !f.IsDir() && !strings.HasSuffix(path, "html") {
-			url := fileToUrl(hostname, "s", path, h.ApiDir+"/_static")
-			static = append(static, url)
+		if err != nil {
+			c.JSON(500, gin.H{
+				"error": err.Error(),
+			})
+			return
 		}
-		return nil
-	})
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": err.Error(),
-		})
-		return
 	}
 
 	c.JSON(200, resources{
