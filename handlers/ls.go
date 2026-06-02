@@ -24,7 +24,8 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	pages := make([]string, 0)
 	static := make([]string, 0)
 
-	hostname := strings.Replace(c.Request.Host, "/", "", -1)
+	hostname := strings.ReplaceAll(c.Request.Host, "/", "")
+	baseURL := requestScheme(c) + "://" + hostname
 	staticDir := h.ApiDir + "/_static"
 
 	// List API scripts (every .sh outside _static), propagating walk errors.
@@ -33,7 +34,7 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 			return err
 		}
 		if strings.HasSuffix(path, "sh") && !strings.Contains(path, "_static") {
-			scripts = append(scripts, fileToUrl(hostname, "api", path, h.ApiDir))
+			scripts = append(scripts, fileToUrl(baseURL, "api", path, h.ApiDir))
 		}
 		return nil
 	})
@@ -54,7 +55,7 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 			if f.IsDir() {
 				return nil
 			}
-			url := fileToUrl(hostname, "s", path, staticDir)
+			url := fileToUrl(baseURL, "s", path, staticDir)
 			if strings.HasSuffix(path, "html") {
 				pages = append(pages, url)
 			} else {
@@ -77,17 +78,23 @@ func (h *LsHandler) ListResources(c *gin.Context) {
 	})
 }
 
-func fileToUrl(hostname string, prefix string, path string, apiDir string) string {
+// requestScheme reports whether the request arrived over https, honoring a
+// reverse proxy's X-Forwarded-Proto header.
+func requestScheme(c *gin.Context) string {
+	if c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https" {
+		return "https"
+	}
+	return "http"
+}
+
+func fileToUrl(baseURL string, prefix string, path string, apiDir string) string {
 	// Remove ./ from apiDir
-	apiDir = strings.Replace(apiDir, "./", "", -1)
+	apiDir = strings.ReplaceAll(apiDir, "./", "")
 	// Replace $apiDir by prefix
-	filePath := strings.Replace(path, apiDir, prefix, -1)
-	baseUrl := fmt.Sprintf("http://%v", hostname)
+	filePath := strings.ReplaceAll(path, apiDir, prefix)
 
 	if strings.Contains(path, "_static") {
-		return fmt.Sprintf("%v/%v", baseUrl, filePath)
-	} else {
-		return fmt.Sprintf("%v/%v", baseUrl, strings.Replace(filePath, ".sh", "", -1))
+		return fmt.Sprintf("%v/%v", baseURL, filePath)
 	}
-
+	return fmt.Sprintf("%v/%v", baseURL, strings.ReplaceAll(filePath, ".sh", ""))
 }
