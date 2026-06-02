@@ -46,12 +46,6 @@ func Router() *gin.Engine {
 	authorized.GET("/api/*path", execHandler.ExecScript)
 	authorized.POST("/api/*path", execHandler.PostExecScript)
 
-	// Arbitrary `docker run` execution — off by default as it grants full
-	// host access. Enable explicitly with -enableDocker.
-	if *enableDocker {
-		authorized.POST("/docker", h.DockerRun)
-	}
-
 	// Static files
 	authorized.Static("/s/", *apiDir+"/_static")
 

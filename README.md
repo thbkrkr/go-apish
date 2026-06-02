@@ -28,7 +28,6 @@ Run the binary directly against the example API:
 | `-user`         | `zuperadmin`| Basic-auth username                                      |
 | `-password`     | *(empty)*   | Basic-auth password. **Empty disables all auth.**        |
 | `-apiKey`       | *(empty)*   | Key for `X-Auth` header auth. Empty disables header auth.|
-| `-enableDocker` | `false`     | Enable `POST /docker` (see Security)                     |
 
 ## Endpoints
 
@@ -39,7 +38,6 @@ Run the binary directly against the example API:
 | GET    | `/ls`        | List script, HTML and static resource URLs                       |
 | GET    | `/api/*path` | Run `<apiDir>/<path>.sh`; `?q=value` is passed as `$1`           |
 | POST   | `/api/*path` | Run `<apiDir>/<path>.sh` with the request body piped to stdin    |
-| POST   | `/docker`    | Run `docker run <body.run>` (only when `-enableDocker` is set)    |
 | GET    | `/s/*`       | Serve static files from `<apiDir>/_static`                        |
 
 Scripts must emit valid JSON; otherwise the caller receives `400 Invalid JSON`.
@@ -58,12 +56,9 @@ startup.
 
 ## Security
 
-`apish` executes shell scripts and, optionally, arbitrary containers — treat it
-as a privileged service:
+`apish` executes shell scripts — treat it as a privileged service:
 
 - Always set `-password` (and ideally an `-apiKey`) in any non-local deployment.
-- `-enableDocker` lets callers run **any** `docker run` command, which is
-  effectively root on the host. Leave it off unless you fully trust callers.
 - Scripts receive request input (`$1` / stdin). Build their JSON output with a
   tool like `jq` so values are safely escaped — see
   [param.sh](example/api/test/param.sh).
