@@ -10,7 +10,7 @@ ARG GIT_COMMIT=undefined
 ARG BUILD_DATE=undefined
 RUN CGO_ENABLED=0 go build \
     -ldflags "-X main.gitCommit=${GIT_COMMIT} -X main.buildDate=${BUILD_DATE}" \
-    -o /go-apish .
+    -o /go-apish ./app
 
 # Runtime stage
 FROM alpine:3.20

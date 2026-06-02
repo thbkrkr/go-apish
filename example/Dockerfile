@@ -1,3 +1,3 @@
 FROM krkr/apish
 
-COPY . /
+COPY . /api

@@ -1,64 +1,77 @@
 # apish — REST API for shell scripts
 
-`apish` turns a directory of shell scripts into a JSON REST API and serves
-static files alongside them. Each script must print **valid JSON** to stdout
-([example](example/api/time/date.sh)); the server parses it and returns it to
-the caller.
+Write shell scripts that return JSON ([example](example/time/date.sh)).
 
-## Build & run
+Serve static files from [_static](example/_static) directory.
 
-```sh
-make binary   # build the ./go-apish binary locally
-make build    # build the krkr/apish Docker image
-make run      # run the image, mounting ./example as /api on port 80
-```
-
-Run the binary directly against the example API:
+## Run
 
 ```sh
-./go-apish -apiDir=example/api -password=secret
+./go-apish \
+  -port=4242 \          # HTTP port
+  -apiDir=example/api \ # directory of .sh scripts and _static files
+  -user=zuperadmin \    # basic-auth username
+  -password=secret \    # basic-auth password (empty = no auth)
+  -apiKey=mykey         # X-Auth header key (empty = disabled)
 ```
 
-## Flags
+```sh
+make binary   # build ./go-apish
+make build    # build krkr/apish Docker image
+make run      # run image, mounting ./example as /api on port 80
+```
 
-| Flag            | Default     | Description                                              |
-| --------------- | ----------- | -------------------------------------------------------- |
-| `-port`         | `4242`      | HTTP port to listen on                                   |
-| `-apiDir`       | `./api`     | Directory of `.sh` scripts and `_static` files           |
-| `-user`         | `zuperadmin`| Basic-auth username                                      |
-| `-password`     | *(empty)*   | Basic-auth password. **Empty disables all auth.**        |
-| `-apiKey`       | *(empty)*   | Key for `X-Auth` header auth. Empty disables header auth.|
+## Example
 
-## Endpoints
+### Layout
 
-| Method | Path         | Description                                                      |
-| ------ | ------------ | ---------------------------------------------------------------- |
-| GET    | `/`          | JSON status, or redirect to `/s` if `_static/index.html` exists  |
-| GET    | `/version`   | Build commit and date (no auth)                                  |
-| GET    | `/ls`        | List script, HTML and static resource URLs                       |
-| GET    | `/api/*path` | Run `<apiDir>/<path>.sh`; `?q=value` is passed as `$1`           |
-| POST   | `/api/*path` | Run `<apiDir>/<path>.sh` with the request body piped to stdin    |
-| GET    | `/s/*`       | Serve static files from `<apiDir>/_static`                        |
+```
+<apiDir>/
+  time/date.sh        →  GET  /api/time/date
+  test/param.sh       →  GET  /api/test/param?q=<value>
+  test/post.sh        →  POST /api/test/post
+  _static/index.html  →  GET  /s/
+```
 
-Scripts must emit valid JSON; otherwise the caller receives `400 Invalid JSON`.
-A script that exits non-zero yields `500` with its error (stderr is logged).
+### Endpoints
 
-## Authentication
+```sh
+# build info (no auth)
+❯ curl localhost:4242/version
+{"build_date":"20260602-233836","git_commit":"cacfab6"}
 
-When `-password` is set, all endpoints except `/` and `/version` require
-either:
+# list available API URLs
+❯ curl -s localhost:4242/ls | jq '.api[]' -r
+http://localhost:4242/api/test/invalid-json
+http://localhost:4242/api/test/param
+http://localhost:4242/api/test/post
+http://localhost:4242/api/time/date
 
-- HTTP basic auth (`-user` / `-password`), or
-- an `X-Auth: <apiKey>` header (when `-apiKey` is set).
+# run a script (GET)
+❯ curl localhost:4242/api/time/date
+{"date":1780435972,"human_date":"Tue Jun  2 23:32:52 CEST 2026"}
 
-If `-password` is empty, **the server is fully open** and logs a warning at
-startup.
+# run a script (GET, optional ?q= passed as $1)
+❯ curl localhost:4242/api/test/param?q=hello
+{"param":"hello"}
 
-## Security
+# run a script (POST, request body piped to stdin)
+❯ curl -d '{"key":"42"}' localhost:4242/api/test/post
+{"jackpot": "42"}
 
-`apish` executes shell scripts — treat it as a privileged service:
+# serve static files from <apiDir>/_static
+❯ curl localhost:4242/s/ -s | head -1
+<!doctype html>
+```
 
-- Always set `-password` (and ideally an `-apiKey`) in any non-local deployment.
-- Scripts receive request input (`$1` / stdin). Build their JSON output with a
-  tool like `jq` so values are safely escaped — see
-  [param.sh](example/api/test/param.sh).
+Invalid JSON from a script → `400`. Non-zero exit → `500`.
+
+```sh
+❯ curl localhost:4242/api/test/invalid-json
+< HTTP/1.1 400 Bad Request
+{"error":"Invalid JSON"}
+
+❯ curl localhost:4242/api/test/fail
+< HTTP/1.1 500 Internal Server Error
+{"error":"exit status 1"}
+```
