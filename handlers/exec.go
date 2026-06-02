@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -33,120 +32,71 @@ func (h *ExecHandler) scriptPath(reqPath string) (string, bool) {
 	return script, true
 }
 
-func (h *ExecHandler) ExecScript(c *gin.Context) {
-	var stdout []byte
-	var err error
-
-	// Build and validate script name
+// resolve validates the request path and ensures the target script exists,
+// writing a 404 and returning ok=false when it cannot be served.
+func (h *ExecHandler) resolve(c *gin.Context) (string, bool) {
 	path := c.Param("path")
 	script, ok := h.scriptPath(path)
 	if !ok {
-		c.JSON(404, gin.H{
-			"error": "Resource not found",
-		})
-		fmt.Printf("[error] invalid resource path: %s\n", path)
-		return
+		c.JSON(404, gin.H{"error": "Resource not found"})
+		log.Printf("[error] invalid resource path: %s", path)
+		return "", false
 	}
-
-	// Check script exists
 	if _, err := os.Stat(script); os.IsNotExist(err) {
-		c.JSON(404, gin.H{
-			"error": "Resource not found",
-		})
-		fmt.Printf("[error] resource not found: %s\n", script)
-		return
+		c.JSON(404, gin.H{"error": "Resource not found"})
+		log.Printf("[error] resource not found: %s", script)
+		return "", false
 	}
-
-	// Exec script with or without param
-	q := c.Request.URL.Query()
-	param, isParam := q["q"]
-	if isParam {
-		stdout, err = exec.Command(script, param[0]).Output()
-	} else {
-		stdout, err = exec.Command(script).Output()
-	}
-
-	if err != nil {
-		serr := err.Error()
-		c.JSON(500, gin.H{
-			"error": serr,
-		})
-		log.Printf("[error] executing `%s`: %s", path, serr)
-		return
-	}
-
-	// Try to unmarshal JSON
-	var someJson interface{}
-	err = json.Unmarshal(stdout, &someJson)
-
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid JSON",
-		})
-		log.Printf("[error] invalid JSON for `%s`: %s", script, stdout)
-		return
-	}
-
-	c.JSON(200, someJson)
-	//log.Printf("[info] executing `%s`: %s", script, stdout)
+	return script, true
 }
 
-func (h *ExecHandler) PostExecScript(c *gin.Context) {
-	var stdout []byte
-	var err error
-
-	// Build and validate script name
-	path := c.Param("path")
-	script, ok := h.scriptPath(path)
-	if !ok {
-		c.JSON(404, gin.H{
-			"error": "Resource not found",
-		})
-		fmt.Printf("[error] invalid resource path: %s\n", path)
-		return
-	}
-
-	// Check script exists
-	if _, err := os.Stat(script); os.IsNotExist(err) {
-		c.JSON(404, gin.H{
-			"error": "Resource not found",
-		})
-		fmt.Printf("[error] resource not found: %s\n", script)
-		return
-	}
-
-	// Exec script, piping the request body to its stdin
-	cmd := exec.Command(script)
-	cmd.Stdin = c.Request.Body
-
-	var buf bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &buf
+// run executes cmd, which is expected to print JSON to stdout, and writes the
+// parsed JSON (or an appropriate error) to the response.
+func (h *ExecHandler) run(c *gin.Context, script string, cmd *exec.Cmd) {
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	if err = cmd.Run(); err != nil {
-		serr := err.Error()
-		c.JSON(500, gin.H{
-			"error": serr,
-		})
-		log.Printf("[error] executing `%s`: %s: %s", path, serr, stderr.String())
+	if err := cmd.Run(); err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		log.Printf("[error] executing `%s`: %s: %s", script, err, stderr.String())
 		return
 	}
 
-	stdout = buf.Bytes()
-
-	// Try to unmarshal JSON
-	var someJson interface{}
-	err = json.Unmarshal(stdout, &someJson)
-
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid JSON",
-		})
-		log.Printf("[error] invalid JSON for `%s`: %s", script, stdout)
+	var payload any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid JSON"})
+		log.Printf("[error] invalid JSON for `%s`: %s", script, stdout.Bytes())
 		return
 	}
 
-	c.JSON(200, someJson)
-	//log.Printf("[info] executing `%s`: %s", script, stdout)
+	c.JSON(200, payload)
+}
+
+// ExecScript runs the script for a GET request, optionally passing the `q`
+// query parameter as the script's first argument.
+func (h *ExecHandler) ExecScript(c *gin.Context) {
+	script, ok := h.resolve(c)
+	if !ok {
+		return
+	}
+
+	cmd := exec.Command(script)
+	if q, isParam := c.Request.URL.Query()["q"]; isParam {
+		cmd = exec.Command(script, q[0])
+	}
+	h.run(c, script, cmd)
+}
+
+// PostExecScript runs the script for a POST request, piping the request body
+// to the script's stdin.
+func (h *ExecHandler) PostExecScript(c *gin.Context) {
+	script, ok := h.resolve(c)
+	if !ok {
+		return
+	}
+
+	cmd := exec.Command(script)
+	cmd.Stdin = c.Request.Body
+	h.run(c, script, cmd)
 }
