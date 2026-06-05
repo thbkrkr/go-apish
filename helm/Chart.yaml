@@ -1,0 +1,5 @@
+apiVersion: v2
+name: apish
+description: REST API for shell scripts
+version: 0.1.0
+appVersion: "latest"

@@ -17,8 +17,26 @@ build:
 		--build-arg BUILD_DATE=$(BUILD_DATE) \
 		-t krkr/apish .
 
+HELM_RELEASE = apish
+
+helm-package:
+	helm package helm
+
+helm-install:
+	helm install $(HELM_RELEASE) helm
+
+helm-upgrade:
+	helm upgrade $(HELM_RELEASE) helm
+
+helm-uninstall:
+	helm uninstall $(HELM_RELEASE)
+
+helm-render:
+	helm template $(HELM_RELEASE) helm
+
 run:
 	docker run -d \
 		-v $$(pwd)/example:/api \
 		-p 80:4242 \
 		krkr/apish
+
