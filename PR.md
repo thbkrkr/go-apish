@@ -6,11 +6,13 @@
 - **Build:** multi-stage Dockerfile with Go 1.25; drop dead `release` target
 - **Docs:** KISS README rewrite with inline flag comments, real curl output, layout tree; example scripts build JSON safely with `jq`
 - **Tests:** add coverage for path traversal, POST, invalid JSON, `/ls`, script failure, wrong credentials; fix broken `apiDir` path after restructuring; simplify HTTP helpers
-- **Helm:** minimal chart (Deployment + Service) with configurable image, port, auth flags
+- **Helm:** minimal chart (Deployment + Service) with configurable image, port, auth flags; `helm-*` Makefile targets using `apish` as release name
+- **Build:** bump Go 1.25 → 1.26.4 and alpine 3.20 → 3.23; tag example image as `krkr/apish:example`; add `push` and `port-forward` targets to example Makefile
 
 ## Test plan
 
 - [ ] `go test ./app/...` passes
-- [ ] `helm template` renders without errors
+- [ ] `helm template` renders without errors (`make helm-render`)
 - [ ] `./go-apish -apiDir=example` serves scripts and static files
 - [ ] Auth is required when `-password` is set; server warns when it is not
+- [ ] `make -C example build && make -C example run` serves the example image on port 80
