@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25-alpine AS build
+FROM golang:1.26.4-alpine AS build
 
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -13,7 +13,7 @@ RUN CGO_ENABLED=0 go build \
     -o /go-apish ./app
 
 # Runtime stage
-FROM alpine:3.20
+FROM alpine:3.23
 
 RUN apk --no-cache add bash jq curl
 COPY --from=build /go-apish /go-apish
