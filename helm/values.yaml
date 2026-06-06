@@ -1,0 +1,16 @@
+replicaCount: 1
+
+image:
+  repository: krkr/apish
+  tag: example
+  pullPolicy: Always
+
+apish:
+  port: 4242
+  apiDir: /api
+  user: zuperadmin
+  password: ""
+  apiKey: "42"
+
+service:
+  port: 80

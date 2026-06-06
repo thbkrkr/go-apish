@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: apish
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - -port={{ .Values.apish.port }}
+            - -apiDir={{ .Values.apish.apiDir }}
+            - -user={{ .Values.apish.user }}
+            {{- if .Values.apish.password }}
+            - -password={{ .Values.apish.password }}
+            {{- end }}
+            {{- if .Values.apish.apiKey }}
+            - -apiKey={{ .Values.apish.apiKey }}
+            {{- end }}
+          ports:
+            - containerPort: {{ .Values.apish.port }}

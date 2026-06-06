@@ -1,3 +1,5 @@
 FROM krkr/apish
 
-COPY . /
+COPY . /api
+
+CMD ["/api/entrypoint.sh"]

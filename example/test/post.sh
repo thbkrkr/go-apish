@@ -3,5 +3,5 @@
 IN="$(cat /dev/stdin)"
 
 echo '{
-  "jackpot": '$(jq .o <<< $IN)'
+  "jackpot": '$(jq .key <<< $IN)'
 }'

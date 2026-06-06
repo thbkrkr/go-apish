@@ -3,12 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
-	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -16,16 +15,11 @@ var (
 	buildDate = "undefined"
 
 	port     = flag.Int("port", 4242, "HTTP port to listen")
+	user     = flag.String("user", "zuperadmin", "Username for basic auth")
 	password = flag.String("password", "", "Admin password for basic auth")
-	apiKey   = flag.String("apiKey", "42", "API key for header auth")
+	apiKey   = flag.String("apiKey", "", "API key for X-Auth header auth (empty disables header auth)")
 	apiDir   = flag.String("apiDir", "./api", "API directory (sh scripts and html pages)")
 )
-
-func ConfigRuntime() {
-	nuCPU := runtime.NumCPU()
-	runtime.GOMAXPROCS(nuCPU)
-	fmt.Printf("[info] Running with %d CPUs\n", nuCPU)
-}
 
 func StartGin() {
 	start := time.Now()
@@ -41,15 +35,16 @@ func StartGin() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	log.Printf("[info] API started in %v on %s\n", time.Since(start), sport)
+	logrus.Infof("API ready in %v, listening on %s", time.Since(start), sport)
 
-	for {
-		s.ListenAndServe()
+	// ListenAndServe only returns on error; log it and exit instead of
+	// silently busy-looping a restart.
+	if err := s.ListenAndServe(); err != nil {
+		logrus.Fatalf("server stopped: %v", err)
 	}
 }
 
 func main() {
 	flag.Parse()
-	ConfigRuntime()
 	StartGin()
 }
